@@ -23,7 +23,7 @@ jobs:
         pip install -e .
         listcondalic pip requirements.txt
   test-conda:
-    name: Build and run using pip file
+    name: Build and run using conda file
     runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@master

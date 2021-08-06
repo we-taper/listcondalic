@@ -78,7 +78,8 @@ def read_conda_env_yml(yml_path) -> List[str]:
     pattern = re.compile(r'[=>!~]')
     def strip_version_info(name: str):
         name = name.replace(' ', '')
-        if found := pattern.findall(name):
+        found = pattern.findall(name)
+        if found:
             # strip off all items after the first match of the pattern
             name = name[:name.find(found[0])]
         return name
