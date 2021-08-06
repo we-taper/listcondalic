@@ -44,3 +44,60 @@ This packages isn't quite clever yet:
 - It only understand very basic package specifications in the conda environment file.
   Complicated package sources (e.g. `-e .`, `git`-based packages) will likely create
   bugs in the result.
+
+# GitHub action template
+
+For a pip-based `requirements.txt`:
+
+```yaml
+name: Report licence status
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check-using-pip:
+    name: Report using a pip environment
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@master
+    - name: Set up Python 3.7
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.7
+    - name: Install packages and listcondalic
+      run: |
+        pip install -r requirements.txt
+        pip install listcondalic
+    - name: Produce report
+      run: listcondalic pip requirements.txt
+```
+
+For a conda produced `environment.yml`:
+
+```yml
+name: Report licence status
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check-using-conda:
+    name: Report using a conda environment
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@master
+    - name: Install conda and prepare the environment
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        activate-environment: YOUR_ENVIRONMENT_NAME
+        environment-file: environment.yml
+        python-version: 3.7
+        auto-activate-base: false
+    - name: Install listcondalic
+      shell: 'bash -l {0}' # this is required by the conda action
+      run: pip install listcondalic
+    - name: Produce report
+      shell: 'bash -l {0}' # this is required by the conda action
+      run: listcondalic conda environment.yml
+```
