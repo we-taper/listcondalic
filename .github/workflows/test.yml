@@ -35,8 +35,9 @@ jobs:
         environment-file: environment.yml
         python-version: 3.7
         auto-activate-base: false
+    - name: Install
+      shell: 'bash -l {0}' # this is required by the conda action
+      run: pip install --no-deps .
     - name: Run
       shell: 'bash -l {0}' # this is required by the conda action
-      run: |
-        pip install --no-deps .
-        listcondalic --all conda environment.yml
+      run: listcondalic --all conda environment.yml
