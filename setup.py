@@ -9,6 +9,7 @@ https://github.com/pypa/sampleproject
 from setuptools import setup, find_packages
 import pathlib
 import pkg_resources
+import versioneer
 
 here = pathlib.Path(__file__).parent.resolve()
 with open(here / 'requirements.txt', 'r') as requirements_txt:
@@ -30,7 +31,8 @@ setup(
 
     # Versions should comply with PEP 440:
     # https://www.python.org/dev/peps/pep-0440/
-    version='0.0.1',  # Required
+    version=versioneer.get_version(),  # Required
+    cmdclass=versioneer.get_cmdclass(),
 
     # This is a one-line description or tagline of what your project does. This
     # corresponds to the "Summary" metadata field:
