@@ -1,5 +1,7 @@
 from listcondalic.liccheck_and_condameta_based import main as _main
 import click
+from listcondalic._version import _version
+__version__ = _version.get_versions()['version']
 
 _help = """\
 KIND: Either conda or pip.
