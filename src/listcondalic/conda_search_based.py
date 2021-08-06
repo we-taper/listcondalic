@@ -1,4 +1,7 @@
-"""Use conda list and conda search to find packages' licenses"""
+"""Use conda list and conda search to find packages' licenses
+
+Not finished. WIP.
+"""
 import json
 import shutil
 import sys

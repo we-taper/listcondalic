@@ -1,0 +1,37 @@
+name: Test (not automated. TODO)
+
+on:
+  push:
+    tags:
+      - '*'
+  workflow_dispatch:
+
+jobs:
+  test-pip:
+    name: Build and run using pip file
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@master
+    - name: Set up Python 3.7
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.7
+    - name: Build a binary wheel and a source tarball
+      run: |
+        pip install -e .
+        listcondalic pip requirements.txt
+  test-conda:
+    name: Build and run using pip file
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@master
+    - name: Install conda
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        auto-update-conda: true
+        python-version: 3.7
+    - name: Run
+      shell: 'bash -l {0}' # this is required by the conda action
+      run: |
+        conda env create -f environment.yml
+        listcondalic --all conda environment.yml

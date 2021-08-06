@@ -1,5 +1,6 @@
 """Use liccheck and conda-meta folder to get all licenses"""
 import csv
+from io import StringIO
 import json
 import os
 import re
@@ -55,7 +56,9 @@ def list_pip_packages_requirements(requirement_file) -> Dict[str, PkgInfo]:
         with open(setup, 'w') as f:
             f.write('[Licenses]')
         cmd = f"-s {setup} -r {requirement_file} --level=Paranoid"
-        packages = liccheck(cmd.split(' '))
+        from contextlib import redirect_stdout
+        with redirect_stdout(StringIO()):  # throw away its rubbish output
+            packages = liccheck(cmd.split(' '))
     res = {}
     for idx in range(len(packages)):
         keys = ('version', 'license')
@@ -73,37 +76,43 @@ def read_conda_env_yml(yml_path) -> List[str]:
             f'Key dependencies not found in the yaml config {yml_path}')
     real_dep = []
     pattern = re.compile(r'[=>!~]')
+    def strip_version_info(name: str):
+        name = name.replace(' ', '')
+        if found := pattern.findall(name):
+            # strip off all items after the first match of the pattern
+            name = name[:name.find(found[0])]
+        return name
     for item in dependencies:
         if isinstance(item, dict):
             # a pip dependency
             for _, v in item.items():
-                real_dep.extend(v)
+                real_dep.extend(map(strip_version_info, v))
         else:
-            item = str(item).replace(' ', '')
-            if found := pattern.findall(item):
-                # strip off all items after the first match of the pattern
-                item = item[:item.find(found[0])]
+            item = strip_version_info(item)
             real_dep.append(item)
     dependencies = real_dep
     return dependencies
 
 
-def main(kind: str, file: str, output=sys.stdout):
+def main(kind: str, file: str, output=sys.stdout, *, all=False):
     database = {}
     if kind.lower() == 'conda':
         dependencies = read_conda_env_yml(file)
         installed = (list_pip_packages_pip_license(), list_conda_meta())
-        pprint(installed[0])
-        print('-' * 80)
-        pprint(installed[1])
-
-        for name in dependencies:
-            if name in installed[0]:
-                database[name] = installed[0][name]
-            elif name in installed[1]:
-                database[name] = installed[1][name]
-            else:
-                database[name] = NotFound
+        if all:
+            database.update(installed[0])
+            database.update(installed[1])
+            for name in dependencies:
+                if name not in database:
+                    database[name] = NotFound
+        else:
+            for name in dependencies:
+                if name in installed[0]:
+                    database[name] = installed[0][name]
+                elif name in installed[1]:
+                    database[name] = installed[1][name]
+                else:
+                    database[name] = NotFound
     elif kind.lower() == 'pip':
         database = list_pip_packages_requirements(file)
     else:
@@ -121,4 +130,4 @@ def main(kind: str, file: str, output=sys.stdout):
 
 
 if __name__ == "__main__":
-    main(kind='conda', file='/home/hx/code/listcondalic/test_example.yml')
+    main(kind='conda', file='test_example.yml')
