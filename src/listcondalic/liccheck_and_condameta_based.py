@@ -11,6 +11,7 @@ from typing import Dict, List
 from yaml import Loader, load
 
 from listcondalic.modified_liccheck import main as liccheck
+from loguru import logger
 
 _NotFound = 'NotFound'
 
@@ -92,6 +93,8 @@ def should_ignore(name):
 
 def do_conda(yml_file):
     conda_part, pip_part = read_conda_env_yml(yml_file)
+    logger.debug(f'conda_part=\n{conda_part}')
+    logger.debug(f'pip_part=\n{pip_part}')
     from pathlib import Path
     with tempfile.TemporaryDirectory() as folder:
         folder = Path(folder)
@@ -103,6 +106,7 @@ def do_conda(yml_file):
         k: v
         for k, v in conda_pip_part_lic.items() if not should_ignore(k)
     }
+    logger.debug(f'conda_pip_part_lic=\n{conda_pip_part_lic}')
 
     conda_metadata = list_conda_meta(retain=('license', 'depends'))
 
@@ -130,15 +134,16 @@ def do_conda(yml_file):
         k: get_licence_conda_meta(k)
         for k in conda_part_added_dependency if not should_ignore(k)
     }
+    logger.debug(f'conda_conda_part_lic=\n{conda_conda_part_lic}')
     total = conda_pip_part_lic.copy()
     total.update(conda_conda_part_lic)
     return total
 
 
-def main(kind: str, file: str, output=sys.stdout, **kwargs):
+def main(kind: str, file: str, output=sys.stdout):
     database = {}
     if kind.lower() == 'conda':
-        do_conda(file)
+        database = do_conda(file)
     elif kind.lower() == 'pip':
         database = list_pip_packages_requirements(file)
     else:
