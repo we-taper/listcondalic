@@ -40,4 +40,4 @@ jobs:
       run: pip install --no-deps .
     - name: Run
       shell: 'bash -l {0}' # this is required by the conda action
-      run: listcondalic --all conda environment.yml
+      run: listcondalic conda environment.yml
