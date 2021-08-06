@@ -95,12 +95,12 @@ def read_conda_env_yml(yml_path) -> List[str]:
     return dependencies
 
 
-def main(kind: str, file: str, output=sys.stdout, *, all=False):
+def main(kind: str, file: str, output=sys.stdout, *, restrict=False):
     database = {}
     if kind.lower() == 'conda':
         dependencies = read_conda_env_yml(file)
         installed = (list_pip_packages_pip_license(), list_conda_meta())
-        if all:
+        if not restrict:
             database.update(installed[0])
             database.update(installed[1])
             for name in dependencies:
