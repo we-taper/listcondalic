@@ -17,13 +17,9 @@ from listcondalic.modified_liccheck import main as liccheck
 from listcondalic.utils import run
 
 
-class PkgInfo(pydantic.BaseModel):
-    version: str
-    license: str
+_NotFound = 'NotFound'
 
-NotFound = PkgInfo(version='NotFound', license='NotFound')
-
-def list_conda_meta() -> Dict[str, PkgInfo]:
+def list_conda_meta() -> Dict[str, str]:
     try:
         conda_dir = os.environ['CONDA_PREFIX']
     except KeyError:
@@ -37,20 +33,18 @@ def list_conda_meta() -> Dict[str, PkgInfo]:
             continue
         with open(path.join(meta, file)) as f:
             content = json.load(f)
-        keys = ('license', 'version')
-        pkg = PkgInfo(**{k: content[k] for k in keys})
-        pkgs[content['name']] = pkg
+        pkgs[content['name']] = content['license']
     return pkgs
 
 
-def list_pip_packages_pip_license() -> Dict[str, PkgInfo]:
+def list_pip_packages_pip_license() -> Dict[str, str]:
     items = json.loads(run('pip-licenses -f json'))
     res = {}
     for item in items:
-        res[item['Name']] = PkgInfo(version=item['Version'], license=item['License'])
+        res[item['Name']] = item['License']
     return res
 
-def list_pip_packages_requirements(requirement_file) -> Dict[str, PkgInfo]:
+def list_pip_packages_requirements(requirement_file) -> Dict[str, str]:
     with tempfile.TemporaryDirectory() as dir:
         setup = path.join(dir, 'setup.ini')
         with open(setup, 'w') as f:
@@ -61,8 +55,7 @@ def list_pip_packages_requirements(requirement_file) -> Dict[str, PkgInfo]:
             packages = liccheck(cmd.split(' '))
     res = {}
     for idx in range(len(packages)):
-        keys = ('version', 'license')
-        res[packages[idx]['name']] = PkgInfo(**{k: packages[idx][k] for k in keys})
+        res[packages[idx]['name']] = packages[idx]['version']
     return res
 
 
@@ -95,39 +88,30 @@ def read_conda_env_yml(yml_path) -> List[str]:
     return dependencies
 
 
-def main(kind: str, file: str, output=sys.stdout, *, restrict=False):
+def main(kind: str, file: str, output=sys.stdout, **kwargs):
     database = {}
     if kind.lower() == 'conda':
         dependencies = read_conda_env_yml(file)
         installed = (list_pip_packages_pip_license(), list_conda_meta())
-        if not restrict:
-            database.update(installed[0])
-            database.update(installed[1])
-            for name in dependencies:
-                if name not in database:
-                    database[name] = NotFound
-        else:
-            for name in dependencies:
-                if name in installed[0]:
-                    database[name] = installed[0][name]
-                elif name in installed[1]:
-                    database[name] = installed[1][name]
-                else:
-                    database[name] = NotFound
+        # if not restrict:
+        database.update(installed[0])
+        database.update(installed[1])
+        for name in dependencies:
+            if name not in database:
+                database[name] = _NotFound
+        # else:
+        #     for name in dependencies:
+        #         if name in installed[0]:
+        #             database[name] = installed[0][name]
+        #         elif name in installed[1]:
+        #             database[name] = installed[1][name]
+        #         else:
+        #             database[name] = _NotFound
     elif kind.lower() == 'pip':
         database = list_pip_packages_requirements(file)
     else:
         raise ValueError(f'Only accept conda or pip as kind. It is {kind}')
-    toprint = []
-    for name, info in database.items():
-        info = info.dict()
-        info['name'] = name
-        toprint.append(info)
-    toprint = sorted(toprint, key=lambda k: k['name'])
-    fieldnames = ('name', 'license', 'version')
-    writer = csv.DictWriter(output, fieldnames=fieldnames)
-    writer.writeheader()
-    writer.writerows(toprint)
+    pprint(database)
 
 
 if __name__ == "__main__":
