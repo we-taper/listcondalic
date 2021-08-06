@@ -1,5 +1,4 @@
 """Use liccheck and conda-meta folder to get all licenses"""
-import csv
 from io import StringIO
 import json
 import os
@@ -7,19 +6,16 @@ import re
 import sys
 import tempfile
 from os import path
-from pprint import pprint
 from typing import Dict, List
 
-import pydantic
 from yaml import Loader, load
 
 from listcondalic.modified_liccheck import main as liccheck
-from listcondalic.utils import run
-
 
 _NotFound = 'NotFound'
 
-def list_conda_meta() -> Dict[str, str]:
+
+def list_conda_meta(retain: tuple = None) -> Dict[str, dict]:
     try:
         conda_dir = os.environ['CONDA_PREFIX']
     except KeyError:
@@ -33,16 +29,12 @@ def list_conda_meta() -> Dict[str, str]:
             continue
         with open(path.join(meta, file)) as f:
             content = json.load(f)
-        pkgs[content['name']] = content['license']
+        pkgs[content['name']] = {
+            k: v
+            for k, v in content.items() if retain is None or k in retain
+        }
     return pkgs
 
-
-def list_pip_packages_pip_license() -> Dict[str, str]:
-    items = json.loads(run('pip-licenses -f json'))
-    res = {}
-    for item in items:
-        res[item['Name']] = item['License']
-    return res
 
 def list_pip_packages_requirements(requirement_file) -> Dict[str, str]:
     with tempfile.TemporaryDirectory() as dir:
@@ -55,64 +47,100 @@ def list_pip_packages_requirements(requirement_file) -> Dict[str, str]:
             packages = liccheck(cmd.split(' '))
     res = {}
     for idx in range(len(packages)):
-        res[packages[idx]['name']] = packages[idx]['version']
+        res[packages[idx]['name']] = packages[idx]['license']
     return res
+
+
+_pattern = re.compile(r'[=>!~]')
+
+
+def strip_version_info(name: str):
+    name = name.replace(' ', '')
+    found = _pattern.findall(name)
+    if found:
+        # strip off all items after the first match of the pattern
+        name = name[:name.find(found[0])]
+    return name
 
 
 def read_conda_env_yml(yml_path) -> List[str]:
     with open(yml_path, 'r') as f:
-        config = load(f, Loader=Loader)
-    try:
-        dependencies = config['dependencies']
-    except KeyError:
-        raise RuntimeError(
-            f'Key dependencies not found in the yaml config {yml_path}')
-    real_dep = []
-    pattern = re.compile(r'[=>!~]')
-    def strip_version_info(name: str):
-        name = name.replace(' ', '')
-        found = pattern.findall(name)
-        if found:
-            # strip off all items after the first match of the pattern
-            name = name[:name.find(found[0])]
-        return name
-    for item in dependencies:
+        data = load(f, Loader=Loader)
+    pip = set()
+    conda = set()
+    for item in data['dependencies']:
         if isinstance(item, dict):
-            # a pip dependency
-            for _, v in item.items():
-                real_dep.extend(map(strip_version_info, v))
+            if 'pip' in item:
+                pip.update(item['pip'])
         else:
-            item = strip_version_info(item)
-            real_dep.append(item)
-    dependencies = real_dep
-    return dependencies
+            conda.add(str(item))
+    return conda, pip
+
+
+PACKAGES_TO_IGNORE = {'python', 'setuptools', 'wheel', 'pip'}
+PACKAGES_TO_IGNORE_REGEX = {re.compile(r'python_abi.*')}
+
+
+def should_ignore(name):
+    if name in PACKAGES_TO_IGNORE:
+        return True
+    for p in PACKAGES_TO_IGNORE_REGEX:
+        if p.match(name):
+            return True
+    return False
+
+
+def do_conda(yml_file):
+    conda_part, pip_part = read_conda_env_yml(yml_file)
+    from pathlib import Path
+    with tempfile.TemporaryDirectory() as folder:
+        folder = Path(folder)
+        reqfile = folder / 'req.txt'
+        reqfile.write_text('\n'.join(pip_part))
+        conda_pip_part_lic = list_pip_packages_requirements(reqfile.absolute())
+
+    conda_pip_part_lic = {
+        k: v
+        for k, v in conda_pip_part_lic.items() if not should_ignore(k)
+    }
+
+    conda_metadata = list_conda_meta(retain=('license', 'depends'))
+
+    def explore_depthfirst(parent, visited: set):
+        visited.add(parent)
+        parent = conda_metadata.get(parent, None)
+        if parent:
+            children = parent.get('depends', [])
+            children = list(map(strip_version_info, children))
+            visited.update(children)
+            for child in children:
+                if child not in visited:
+                    explore_depthfirst(child, visited)
+
+    conda_part_added_dependency = set()
+    for item in conda_part:
+        explore_depthfirst(item, conda_part_added_dependency)
+
+    def get_licence_conda_meta(k):
+        if k in conda_metadata:
+            return conda_metadata[k].get('license', _NotFound)
+        return _NotFound
+
+    conda_conda_part_lic = {
+        k: get_licence_conda_meta(k)
+        for k in conda_part_added_dependency if not should_ignore(k)
+    }
+    total = conda_pip_part_lic.copy()
+    total.update(conda_conda_part_lic)
+    return total
 
 
 def main(kind: str, file: str, output=sys.stdout, **kwargs):
     database = {}
     if kind.lower() == 'conda':
-        dependencies = read_conda_env_yml(file)
-        installed = (list_pip_packages_pip_license(), list_conda_meta())
-        # if not restrict:
-        database.update(installed[0])
-        database.update(installed[1])
-        for name in dependencies:
-            if name not in database:
-                database[name] = _NotFound
-        # else:
-        #     for name in dependencies:
-        #         if name in installed[0]:
-        #             database[name] = installed[0][name]
-        #         elif name in installed[1]:
-        #             database[name] = installed[1][name]
-        #         else:
-        #             database[name] = _NotFound
+        do_conda(file)
     elif kind.lower() == 'pip':
         database = list_pip_packages_requirements(file)
     else:
         raise ValueError(f'Only accept conda or pip as kind. It is {kind}')
-    pprint(database)
-
-
-if __name__ == "__main__":
-    main(kind='conda', file='test_example.yml')
+    json.dump(database, output, indent=2)

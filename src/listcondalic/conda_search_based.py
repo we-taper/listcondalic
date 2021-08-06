@@ -5,7 +5,7 @@ Not finished. WIP.
 import json
 import shutil
 import sys
-from typing import List
+from typing import List, Optional
 
 from loguru import logger
 
@@ -30,15 +30,26 @@ def list_conda(env) -> List[dict]:
     return json.loads(ret)
 
 
-def conda_search(package: str) -> dict:
-    """Search conda for information about a package"""
+def conda_search(package: str, use_local=False, timeout=None) -> Optional[dict]:
+    """Search conda for information about a package
+    
+    Returns None is conda search did not finish within a reasonable
+    amoutn of time.
+    """
     logger.info(f'Looking for {package}')
-    ret = run(f"{conda_exe} search --info --json {package}")
+    if use_local:
+        cmd = f"{conda_exe} search --info --json --use-local {package}"
+    else:
+        cmd = f"{conda_exe} search --info --json {package}"
+    ret = run(cmd, raise_error=False, timeout=timeout)
+    if isinstance(ret, int):
+        logger.error(f"Failed to find package data for {package}")
+        return
     return json.loads(ret)
 
 
 def extract_pkgspec(list_output):
-    return f"{list_output['name']}={list_output['version']}"
+    return f"{list_output['name']}=={list_output['version']}"
 
 
 def extract_license(conda_info: dict) -> dict:
