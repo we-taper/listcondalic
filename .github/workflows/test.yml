@@ -21,7 +21,8 @@ jobs:
     - name: Build a binary wheel and a source tarball
       run: |
         pip install -e .
-        listcondalic pip requirements.txt
+    - name: Run
+      run: listcondalic pip requirements.txt
   test-conda:
     name: Build and run using conda file
     runs-on: ubuntu-20.04
@@ -37,5 +38,4 @@ jobs:
     - name: Run
       shell: 'bash -l {0}' # this is required by the conda action
       run: |
-        conda env create -f environment.yml
         listcondalic --all conda environment.yml
