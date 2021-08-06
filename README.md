@@ -34,3 +34,13 @@ listcondalic pip requirements.txt > output.json
 ```
 
 The package licence information will be saved at `output.json`.
+
+## Existing problems
+
+This packages isn't quite clever yet:
+
+- It tries to skip a few packages such as `python', 'setuptools', 'wheel' and 'pip`.
+  Hopefully, we won't neglect any important packages.
+- It only understand very basic package specifications in the conda environment file.
+  Complicated package sources (e.g. `-e .`, `git`-based packages) will likely create
+  bugs in the result.
