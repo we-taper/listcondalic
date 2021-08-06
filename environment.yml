@@ -1,0 +1,12 @@
+name: listcondalic
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - pyyaml
+  - pip:
+    - click==8.0.1
+    - liccheck==0.6.2
+    - loguru==0.5.3
+    - pip-licenses==3.5.1
+    - pydantic==1.8.2
