@@ -1,7 +1,0 @@
-{
-    "python.pythonPath": "/home/hx/miniconda3/envs/listcondalic/bin/python",
-    "python.envFile": "${workspaceFolder}/.env",
-    "terminal.integrated.env.linux": {
-        "PYTHONPATH": "${workspaceFolder}/src"
-    }
-}
