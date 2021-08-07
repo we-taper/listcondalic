@@ -42,8 +42,13 @@ This packages isn't quite clever yet:
 - It tries to skip a few packages such as `python`, `setuptools`, `wheel` and `pip`.
   Hopefully, we won't neglect any important packages.
 - It only understand very basic package specifications in the conda environment file.
-  Complicated package sources (e.g. `-e .`, `git`-based packages) will likely create
-  bugs in the result.
+  Complicated package sources will likely create bugs in the result. In particular,
+  it does not suppoprt:
+  - "." (dot) package, or in general, if you specify a path to a local python package,
+    this library will not attempt to analyze the packaged located in that folder. Instead,
+    it will be registered as a package named, e.g. ".", and therefore it will report the
+    package's licence as `NotFound`.
+  - GitHub URL package, for reasons mentioned above.
 
 # GitHub action template
 
