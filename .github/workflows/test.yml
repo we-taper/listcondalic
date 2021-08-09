@@ -1,11 +1,12 @@
 name: Tests
 
 on:
+  # enable this as a status check
+  # ref: https://github.community/t/github-actions-as-status-checks/16666
+  pull_request:
   push:
     tags:
       - '*'
-    branches:
-      - "*"
   workflow_dispatch:
 
 jobs:
