@@ -4,7 +4,7 @@ channels:
   - defaults
 dependencies:
   - pip
-  - pyyaml
+  - pyyaml==5.4.1
   - pip:
     - click==8.0.1
     - liccheck==0.6.2

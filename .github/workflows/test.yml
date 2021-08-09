@@ -1,14 +1,28 @@
-name: Simple test
+name: Tests
 
 on:
+  # enable this as a status check
+  # ref: https://github.community/t/github-actions-as-status-checks/16666
+  pull_request:
   push:
     tags:
       - '*'
-    branches:
-      - "*"
   workflow_dispatch:
 
 jobs:
+  unittest:
+    name: Unittests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - name: Set up Python 3.7
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.7
+      - name: Install dependencies and this package
+        run: pip install .
+      - name: Run tests
+        run: python -m unittest discover -v -s src/test -p 'test*.py'
   test-pip:
     name: Build and run using pip file
     runs-on: ubuntu-20.04
