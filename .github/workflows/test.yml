@@ -1,4 +1,4 @@
-name: Simple test
+name: Tests
 
 on:
   push:
@@ -21,7 +21,7 @@ jobs:
       - name: Install dependencies and this package
         run: pip install .
       - name: Run tests
-        run: python -m unittest -v -s ./src/test -p test*.py
+        run: python -m unittest discover -v -s src/test -p 'test*.py'
   test-pip:
     name: Build and run using pip file
     runs-on: ubuntu-20.04
