@@ -7,7 +7,7 @@ For Conda environment:
 1. Create an environment specification file. Please follow [this guide](https://conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#exporting-the-environment-yml-file)
    to create this file.
 2. Edit the file and remove all unnecessary dependencies (very important, otherwise the
-   it is easy to get inundated with too much packages). For example, remove things like `ipython`,
+   it is easy to get inundated with too many packages). For example, remove things like `ipython`,
    `ipykernel`, which are used for purpose other than the library itself.
 3. Install this package.
 4. Run:

@@ -12,8 +12,20 @@ FILE: the dependency file.
 @click.command("List licenses and versions", help=_help)
 @click.argument('kind')
 @click.argument('file')
-def main(kind, file):
-    from loguru import logger
-    logger.remove()
-    logger.add(sys.stderr, level='INFO')
+@click.option('-v', '--verbose', count=True)
+def main(kind, file, verbose):
+    assert verbose >= 0
+    if verbose == 0:
+        from loguru import logger
+        logger.remove()
+        logger.add(sys.stderr, level='ERROR')
+    elif verbose == 1:
+        from loguru import logger
+        logger.remove()
+        logger.add(sys.stderr, level="DEBUG")
+    elif verbose > 1:
+        from loguru import logger
+        logger.remove()
+        logger.add(sys.stderr, level="TRACE")
+
     _main(kind=kind, file=file)

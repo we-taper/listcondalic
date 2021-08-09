@@ -56,11 +56,13 @@ _pattern = re.compile(r'[=>!~]')
 
 
 def strip_version_info(name: str):
+    logger.trace(f'strip_version_info:name:{name}')
     name = name.replace(' ', '')
     found = _pattern.findall(name)
     if found:
         # strip off all items after the first match of the pattern
         name = name[:name.find(found[0])]
+    logger.trace(f"strip_version_info:outname:{name}")
     return name
 
 
@@ -111,6 +113,7 @@ def do_conda(yml_file):
     conda_metadata = list_conda_meta(retain=('license', 'depends'))
 
     def explore_depthfirst(parent, visited: set):
+        parent = strip_version_info(parent)
         visited.add(parent)
         parent = conda_metadata.get(parent, None)
         if parent:
