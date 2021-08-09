@@ -52,12 +52,11 @@ def list_pip_packages_requirements(requirement_file) -> Dict[str, str]:
     return res
 
 
-_pattern = re.compile(r'[=>!~]')
+_pattern = re.compile(r'\s*[=><!~].*')
 
 
 def strip_version_info(name: str):
     logger.trace(f'strip_version_info:name:{name}')
-    name = name.replace(' ', '')
     found = _pattern.findall(name)
     if found:
         # strip off all items after the first match of the pattern
@@ -127,6 +126,7 @@ def do_conda(yml_file):
     conda_part_added_dependency = set()
     for item in conda_part:
         explore_depthfirst(item, conda_part_added_dependency)
+    logger.debug(f'conda_part_added_dependency\n{conda_part_added_dependency}')
 
     def get_licence_conda_meta(k):
         if k in conda_metadata:
