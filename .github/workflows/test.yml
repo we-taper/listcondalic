@@ -9,6 +9,19 @@ on:
   workflow_dispatch:
 
 jobs:
+  unittest:
+    name: Unittests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - name: Set up Python 3.7
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.7
+      - name: Install dependencies and this package
+        run: pip install .
+      - name: Run tests
+        run: python -m unittest -v -s ./src/test -p test*.py
   test-pip:
     name: Build and run using pip file
     runs-on: ubuntu-20.04
